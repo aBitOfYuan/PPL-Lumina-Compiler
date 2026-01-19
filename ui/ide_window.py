@@ -271,7 +271,7 @@ class LuminaIDE:
         # 1. SIDEBAR (Left)
         self.sidebar = ctk.CTkFrame(root, width=200, corner_radius=0, fg_color=self.colors["sidebar"])
         self.sidebar.grid(row=0, column=0, rowspan=2, sticky="nsew")
-        self.sidebar.grid_rowconfigure(5, weight=1)
+        self.sidebar.grid_rowconfigure(6, weight=1)  # Added one more row for Exit button
 
         self.create_sidebar_content()
 
@@ -310,40 +310,47 @@ class LuminaIDE:
     def create_sidebar_content(self):
         # Logo / Title
         title_label = ctk.CTkLabel(self.sidebar, text="LUMINA", font=("Montserrat", 24, "bold"), text_color="white")
-        title_label.grid(row=0, column=0, padx=20, pady=(20, 10))
+        title_label.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="w")
         
         subtitle = ctk.CTkLabel(self.sidebar, text="Compiler Environment", font=("Segoe UI", 12), text_color="gray")
-        subtitle.grid(row=1, column=0, padx=20, pady=(0, 20))
+        subtitle.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="w")
+
+        # Container frame for buttons to align them properly
+        buttons_container = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        buttons_container.grid(row=2, column=0, sticky="nsew", padx=0, pady=0, rowspan=4)
+        buttons_container.grid_columnconfigure(0, weight=1)
+        buttons_container.grid_rowconfigure(4, weight=1)  # Add weight to push content up
 
         # Buttons - INCREASED FONT SIZE to 12 for sidebar buttons
-        self.btn_new = ctk.CTkButton(self.sidebar, text="📄 New File", command=self.add_new_file,
-                                    fg_color="transparent", border_width=1, border_color="#3e3e42",
+        # LEFT ALIGNED for all buttons
+        self.btn_new = ctk.CTkButton(buttons_container, text="📄 New File", command=self.add_new_file,
+                                    fg_color="transparent", border_width=0, border_color="#3e3e42",
                                     hover_color="#3e3e42", corner_radius=0,
-                                    font=("Segoe UI", 12))
-        self.btn_new.grid(row=2, column=0, padx=0, pady=1, sticky="ew")
+                                    font=("Segoe UI", 12), anchor="w")  # LEFT ALIGNED
+        self.btn_new.grid(row=0, column=0, padx=0, pady=1, sticky="ew")
 
-        self.btn_open = ctk.CTkButton(self.sidebar, text="📂 Open File", command=self.open_file,
-                                    fg_color="transparent", border_width=1, border_color="#3e3e42",
+        self.btn_open = ctk.CTkButton(buttons_container, text="📂 Open File", command=self.open_file,
+                                    fg_color="transparent", border_width=0, border_color="#3e3e42",
                                     hover_color="#3e3e42", corner_radius=0,
-                                    font=("Segoe UI", 12))
-        self.btn_open.grid(row=3, column=0, padx=0, pady=1, sticky="ew")
+                                    font=("Segoe UI", 12), anchor="w")  # LEFT ALIGNED
+        self.btn_open.grid(row=1, column=0, padx=0, pady=1, sticky="ew")
 
-        self.btn_save = ctk.CTkButton(self.sidebar, text="💾 Save File", command=self.save_current_file,
-                                    fg_color="transparent", border_width=1, border_color="#3e3e42",
+        self.btn_save = ctk.CTkButton(buttons_container, text="💾 Save File", command=self.save_current_file,
+                                    fg_color="transparent", border_width=0, border_color="#3e3e42",
                                     hover_color="#3e3e42", corner_radius=0,
-                                    font=("Segoe UI", 12))
-        self.btn_save.grid(row=4, column=0, padx=0, pady=1, sticky="ew")
+                                    font=("Segoe UI", 12), anchor="w")  # LEFT ALIGNED
+        self.btn_save.grid(row=2, column=0, padx=0, pady=1, sticky="ew")
 
-        self.btn_run = ctk.CTkButton(self.sidebar, text="▶ Run Analysis", command=self.run_lexer,
+        self.btn_run = ctk.CTkButton(buttons_container, text="▶ Run Analysis", command=self.run_lexer,
                                     fg_color=self.colors["accent"], hover_color="#005f9e", 
-                                    corner_radius=0, font=("Segoe UI", 12))
-        self.btn_run.grid(row=5, column=0, padx=0, pady=1, sticky="ew")
+                                    corner_radius=0, font=("Segoe UI", 12), anchor="w")  # LEFT ALIGNED
+        self.btn_run.grid(row=3, column=0, padx=0, pady=1, sticky="ew")
 
-        # Bottom Exit Button
+        # Bottom Exit Button - AT THE VERY BOTTOM EDGE
         self.btn_exit = ctk.CTkButton(self.sidebar, text="Exit", command=self.root.quit,
                                     fg_color="#333333", hover_color="#c42b1c", 
                                     corner_radius=0, font=("Segoe UI", 12))
-        self.btn_exit.grid(row=6, column=0, padx=0, pady=0, sticky="ew")
+        self.btn_exit.grid(row=6, column=0, padx=0, pady=0, sticky="sew")
 
     def create_table_area(self):
         header_frame = ctk.CTkFrame(self.table_frame, fg_color="#252526", height=30, corner_radius=0)
@@ -358,7 +365,7 @@ class LuminaIDE:
                                           command=self.save_token_table,
                                           width=120, height=25,
                                           fg_color="transparent", 
-                                          border_width=1, 
+                                          border_width=0,
                                           border_color="#3e3e42",
                                           hover_color="#3e3e42",
                                           font=("Segoe UI", 10))
