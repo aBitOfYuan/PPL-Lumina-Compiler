@@ -257,11 +257,13 @@ class LuminaIDE:
         
         # Color Palette (VS Code Dark Theme)
         self.colors = {
-            "bg": "#1e1e1e",           # Editor Background
-            "sidebar": "#252526",      # Sidebar Color
-            "accent": "#007acc",       # Blue Accent
-            "text": "#d4d4d4",         # Text Color
-            "panel_border": "#3e3e42"  # Subtle Border
+            "bg": "#1e1e1e",
+            "sidebar": "#252526",
+            "panel": "#2d2d30",
+            "accent": "#0e639c",   # VS Code blue
+            "text": "#d4d4d4",
+            "muted": "#9e9e9e",
+            "border": "#3c3c3c"
         }
 
         # --- LAYOUT SETUP ---
@@ -323,25 +325,25 @@ class LuminaIDE:
 
         # Buttons - INCREASED FONT SIZE to 12 for sidebar buttons
         # LEFT ALIGNED for all buttons
-        self.btn_new = ctk.CTkButton(buttons_container, text="📄 New File", command=self.add_new_file,
+        self.btn_new = ctk.CTkButton(buttons_container, text="New File", command=self.add_new_file,
                                     fg_color="transparent", border_width=0, border_color="#3e3e42",
                                     hover_color="#3e3e42", corner_radius=0,
                                     font=("Segoe UI", 12), anchor="w")  # LEFT ALIGNED
         self.btn_new.grid(row=0, column=0, padx=0, pady=1, sticky="ew")
 
-        self.btn_open = ctk.CTkButton(buttons_container, text="📂 Open File", command=self.open_file,
+        self.btn_open = ctk.CTkButton(buttons_container, text="Open File", command=self.open_file,
                                     fg_color="transparent", border_width=0, border_color="#3e3e42",
                                     hover_color="#3e3e42", corner_radius=0,
                                     font=("Segoe UI", 12), anchor="w")  # LEFT ALIGNED
         self.btn_open.grid(row=1, column=0, padx=0, pady=1, sticky="ew")
 
-        self.btn_save = ctk.CTkButton(buttons_container, text="💾 Save File", command=self.save_current_file,
+        self.btn_save = ctk.CTkButton(buttons_container, text="Save File", command=self.save_current_file,
                                     fg_color="transparent", border_width=0, border_color="#3e3e42",
                                     hover_color="#3e3e42", corner_radius=0,
                                     font=("Segoe UI", 12), anchor="w")  # LEFT ALIGNED
         self.btn_save.grid(row=2, column=0, padx=0, pady=1, sticky="ew")
 
-        self.btn_run = ctk.CTkButton(buttons_container, text="▶ Run Analysis", command=self.run_lexer,
+        self.btn_run = ctk.CTkButton(buttons_container, text="Run Lexer", command=self.run_lexer,
                                     fg_color=self.colors["accent"], hover_color="#005f9e", 
                                     corner_radius=0, font=("Segoe UI", 12), anchor="w")  # LEFT ALIGNED
         self.btn_run.grid(row=3, column=0, padx=0, pady=1, sticky="ew")
