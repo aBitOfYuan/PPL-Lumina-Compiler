@@ -378,7 +378,7 @@ class LuminaIDE:
                                     text_color=self.colors["text"])
         self.btn_save.grid(row=2, column=0, padx=8, pady=4, sticky="ew")
 
-        self.btn_run = ctk.CTkButton(buttons_container, text="▶  Run Lexer", command=self.run_lexer,
+        self.btn_run = ctk.CTkButton(buttons_container, text="▶  Run Lexer Analysis", command=self.run_lexer,
                                     fg_color=self.colors["accent"], hover_color="#1bcde5", 
                                     corner_radius=8, font=("Segoe UI", 13, "bold"), anchor="w",
                                     text_color="#000000")
@@ -735,4 +735,4 @@ class LuminaIDE:
 if __name__ == "__main__":
     root = ctk.CTk()
     app = LuminaIDE(root)
-    root.mainloop()
+    root.mainloop() 
