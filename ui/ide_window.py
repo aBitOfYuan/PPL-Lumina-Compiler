@@ -404,8 +404,8 @@ class LuminaIDE:
 
         # Exit Button
         self.btn_exit = ctk.CTkButton(self.sidebar, text="Exit", command=self.root.quit,
-                                      fg_color="#223043", hover_color="#c42b1c", 
-                                      corner_radius=6, font=("Segoe UI", 12), text_color=self.colors["text"])
+                                     fg_color="#223043", hover_color="#c42b1c", 
+                                     corner_radius=6, font=("Segoe UI", 12), text_color=self.colors["text"])
         self.btn_exit.grid(row=6, column=0, padx=0, pady=0, sticky="sew")
 
     def create_table_area(self):
@@ -498,6 +498,12 @@ class LuminaIDE:
                                       highlightthickness=0,
                                       insertbackground=self.colors["accent"])
         self.console_output.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        # --- Configure Color Tags ---
+        self.console_output.tag_config("error", foreground="#ef4444")   # Red color for errors
+        self.console_output.tag_config("success", foreground="#22c55e") # Green color for success
+        self.console_output.tag_config("normal", foreground=self.colors["text"]) # Default color
+        
         self.console_output.config(state=tk.DISABLED)
 
     # --- File Operations ---
@@ -727,9 +733,23 @@ class LuminaIDE:
                 file_handle.write(f"{token_type:<20}: {count:>4}\n")
 
     # --- Core Logic ---
-    def log_console(self, message):
+    def log_console(self, message, msg_type="normal"):
+        """
+        Logs a message to the terminal with color support.
+        msg_type options: "normal", "error", "success"
+        """
         self.console_output.config(state=tk.NORMAL)
-        self.console_output.insert(tk.END, f">> {message}\n")
+        
+        # Add a prefix based on type
+        prefix = ">> "
+        if msg_type == "error":
+            prefix = "!! "
+        elif msg_type == "success":
+            prefix = "OK "
+            
+        # Insert text with the specific tag
+        self.console_output.insert(tk.END, f"{prefix}{message}\n", msg_type)
+        
         self.console_output.see(tk.END)
         self.console_output.config(state=tk.DISABLED)
 
@@ -751,10 +771,10 @@ class LuminaIDE:
                 self.tabbed_editor.tabs[current_tab_id]['tokens'] = []
             
             self.render_tokens([])
-            messagebox.showwarning("Warning", "Source code is empty!")
+            self.log_console("Source code is empty.", "error")
             return
 
-        self.log_console("Running Lexical Analysis...")
+        self.log_console("Running Lexical Analysis...", "normal")
 
         try:
             lexer = LuminaLexer(source_code)
@@ -770,21 +790,27 @@ class LuminaIDE:
             # Render tokens
             self.render_tokens(normalized)
             
-            # CHECK FOR ERRORS
+            # --- CHECK FOR ERRORS & UPDATE TERMINAL COLOR ---
             if hasattr(lexer, 'errors') and lexer.errors:
-                self.log_console(f"Analysis completed with {len(lexer.errors)} error(s):")
+                # 1. Log the failure header in RED
+                self.log_console(f"Analysis completed with {len(lexer.errors)} error(s):", "error")
+                
+                # 2. Log each specific error in RED
                 for err in lexer.errors:
-                    self.log_console(f"  ! {err}")
+                    self.log_console(f"  {err}", "error")
+                
+                # 3. Show popup
                 messagebox.showerror("Lexical Errors", f"Found {len(lexer.errors)} lexical errors.\nCheck terminal for details.")
             else:
-                self.log_console(f"Success! Generated {len(tokens)} tokens with no errors.")
+                # Log success in GREEN
+                self.log_console(f"Success! Generated {len(tokens)} tokens with no errors.", "success")
             
         except Exception as e:
             self.render_tokens([])
             # Reset tokens on error
             if current_tab_id:
                 self.tabbed_editor.tabs[current_tab_id]['tokens'] = []
-            self.log_console(f"CRITICAL ERROR: {str(e)}")
+            self.log_console(f"CRITICAL ERROR: {str(e)}", "error")
 
 
 if __name__ == "__main__":

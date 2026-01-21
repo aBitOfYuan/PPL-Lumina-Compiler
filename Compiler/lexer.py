@@ -24,7 +24,7 @@ class LuminaLexer:
         self.errors = []
         self.line_number = 1
         
-        # Keywords (Added 'return' which was in your code but missing from spec)
+        # Keywords
         self.keywords = {
             'func', 'main', 'let', 'var', 'type', 'struct', 'void', 'requires', 
             'ensures', 'invariant', 'old', 'result', 'if', 'else', 'switch', 
@@ -57,44 +57,43 @@ class LuminaLexer:
             ('INTEGER',       r'\d+'),
             
             # Compound Operators (Maximal Munch)
-            ('OP_ARROW',      r'->'),
+            ('OP_ARROW',       r'->'),
             ('OP_GUILLEMET_L', r'<<'), # Also Left Shift
             ('OP_GUILLEMET_R', r'>>'), # Also Right Shift
             
-            ('OP_EQ',         r'=='),
-            ('OP_NEQ',        r'!='),
-            ('OP_GE',         r'>='),
-            ('OP_LE',         r'<='),
-            ('OP_AND',        r'&&'),
-            ('OP_OR',         r'\|\|'),
-            ('OP_INC',        r'\+\+'),
-            ('OP_DEC',        r'--'),
+            ('OP_EQ',          r'=='),
+            ('OP_NEQ',         r'!='),
+            ('OP_GE',          r'>='),
+            ('OP_LE',          r'<='),
+            ('OP_AND',         r'&&'),
+            ('OP_OR',          r'\|\|'),
+            ('OP_INC',         r'\+\+'),
+            ('OP_DEC',         r'--'),
             
-            ('OP_ADD_ASS',    r'\+='),
-            ('OP_SUB_ASS',    r'-='),
-            ('OP_MUL_ASS',    r'\*='),
-            ('OP_DIV_ASS',    r'/='),
-            ('OP_MOD_ASS',    r'%='), # Added Modulo Assign
+            ('OP_ADD_ASS',     r'\+='),
+            ('OP_SUB_ASS',     r'-='),
+            ('OP_MUL_ASS',     r'\*='),
+            ('OP_DIV_ASS',     r'/='),
+            ('OP_MOD_ASS',     r'%='), 
             
-            # Bitwise Operators (Added)
-            ('OP_BIT_AND',    r'&'),
-            ('OP_BIT_OR',     r'\|'),
-            ('OP_BIT_XOR',    r'\^'),
-            ('OP_BIT_NOT',    r'~'),
+            # Bitwise Operators
+            ('OP_BIT_AND',     r'&'),
+            ('OP_BIT_OR',      r'\|'),
+            ('OP_BIT_XOR',     r'\^'),
+            ('OP_BIT_NOT',     r'~'),
 
             # Single Character Symbols
-            # Note: We must include % here for Modulo, and the other single chars
-            ('SYMBOL',        r'[+\-*/%=!><(){}\[\],;:\.]'),
+            ('SYMBOL',         r'[+\-*/%=!><(){}\[\],;:\.]'),
             
             # Identifiers (Words)
-            ('WORD',          r'[a-zA-Z_][a-zA-Z0-9_]*'),
+            ('WORD',           r'[a-zA-Z_][a-zA-Z0-9_]*'),
             
             # Whitespace
-            ('NEWLINE',       r'\n'),
-            ('SKIP',          r'[ \t]+'),
+            ('NEWLINE',        r'\n'),
+            ('SKIP',           r'[ \t]+'),
             
             # Error Catching
-            ('MISMATCH',      r'.'), 
+            ('MISMATCH',       r'.'), 
         ]
 
         # Compile the master regex
