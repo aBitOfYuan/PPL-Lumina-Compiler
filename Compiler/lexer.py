@@ -233,20 +233,23 @@ class LuminaLexer:
         # 2. Valid Keywords (Exact Match)
         if value in self.keywords:
             # --- STRICT KEYWORD PROTECTION ---
-            # Even if it matches a keyword, we must check if the context expected an Identifier.
-            # If so, using a keyword here is forbidden.
             
-            # Contexts where an identifier is required:
-            # 1. After primitive types (e.g. 'int x')
-            # 2. After declarations (e.g. 'func myFunc', 'struct MyStruct')
-            expecting_identifier = self.primitive_types.union({'func', 'struct', 'type', 'var', 'let'})
+            # Identify predecessors that STRICTLY forbid a following keyword.
+            # NOTE: We removed 'var' and 'let' from here to allow 'var float'.
+            strict_predecessors = {'func', 'struct', 'type'}.union(self.primitive_types)
 
-            if last_keyword in expecting_identifier:
-                # Exception: 'main' is often a keyword but strictly required after 'func' 
-                # as the entry point. We allow it.
+            if last_keyword in strict_predecessors:
+                # Exception 1: 'func main' is allowed (entry point)
                 if last_keyword == 'func' and value == 'main':
                     return 'KEYWORD'
                 
+                # Exception 2: Contracts are allowed after primitive types
+                # e.g. "-> bool requires"
+                contract_keywords = {'requires', 'ensures', 'invariant'}
+                if last_keyword in self.primitive_types and value in contract_keywords:
+                    return 'KEYWORD'
+                
+                # If no exception met, ban the keyword usage here
                 self._error(f"Invalid identifier '{value}'. Keywords cannot be used as variable or function names.")
                 return 'INVALID'
 
@@ -263,20 +266,18 @@ class LuminaLexer:
         # ---------------------------------------------------------------------
         # STRICT KEYWORD PROTECTION (Typo/Case Checks)
         # ---------------------------------------------------------------------
-        # This prevents 'whille' from being accepted as a variable name.
-
-        # A. Case Sensitivity Check (e.g., 'While' vs 'while')
+        
+        # A. Case Sensitivity Check
         if value.lower() in self.keywords:
              self._error(f"Keywords are case-sensitive. Did you mean '{value.lower()}'?")
              return 'INVALID'
 
-        # B. Typo Detection (e.g., 'whille' vs 'while')
+        # B. Typo Detection
         all_reserved = list(self.keywords) + list(self.reserved_words)
         matches = difflib.get_close_matches(value, all_reserved, n=1, cutoff=0.8)
         
         if matches:
             suggestion = matches[0]
-            # Avoid flagging short variables like 'i' as typos of 'if'
             if len(value) > 1: 
                 self._error(f"Invalid lexeme '{value}'. Did you mean '{suggestion}'?")
                 return 'INVALID'
@@ -302,7 +303,11 @@ class LuminaLexer:
                 return 'INVALID'
             return 'ID_VAR_TYPE'
 
-        # CASE 3: Variable Identifier (after primitive types like 'int', 'bool') -> ID_VAR
+        # CASE 3: Variable Identifier (after primitive types only)
+        # [MODIFIED]: We REMOVED 'var' and 'let' from here.
+        # Strict snake_case checking applies only to primitive definitions (e.g. 'int x').
+        # 'var' can be followed by a Type (PascalCase) OR a variable (snake_case), 
+        # so we let it fall through to the fallback logic.
         if last_keyword in self.primitive_types:
             if any(c.isupper() for c in value):
                 self._error(f"Invalid variable identifier '{value}'. Must be snake_case (no uppercase).")
@@ -310,10 +315,11 @@ class LuminaLexer:
             return 'ID_VAR'
 
         # ---------------------------------------------------------------------
-        # FALLBACK (When context is neutral)
+        # FALLBACK (When context is neutral OR 'var'/'let')
         # ---------------------------------------------------------------------
 
         # If it looks like a Type (PascalCase), classify as ID_VAR_TYPE
+        # This will catch 'BankAccount' in 'var BankAccount alice'
         if value[0].isupper():
             if '_' in value:
                 self._error(f"Invalid Type identifier '{value}'. Underscores allowed only in snake_case variables.")
