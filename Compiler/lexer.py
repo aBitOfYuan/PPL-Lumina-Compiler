@@ -67,7 +67,6 @@ class LuminaLexer:
         self.primitive_types = {'int', 'char', 'bool', 'double', 'float', 'string'}
 
         # --- OPTIMIZATION: Combine all reserved words for typo checking ---
-        # We create this list once here so we don't rebuild it for every token.
         self.all_vocab = list(self.keywords) + list(self.reserved_words) + ['true', 'false']
 
     # -----------------------------------------------------------------------------
@@ -263,30 +262,38 @@ class LuminaLexer:
             return 'NOISE_WORD'
 
         # ---------------------------------------------------------------------
-        # STRICT SPELLING & TYPO ENFORCEMENT
+        # STRICT SPELLING & TYPO ENFORCEMENT (UPDATED)
         # ---------------------------------------------------------------------
         
-        # Check A: Case Sensitivity (e.g., "While" instead of "while")
+        # Check A: Case Sensitivity
         if value.lower() in self.keywords:
              self._error(f"Keywords are case-sensitive. Did you mean '{value.lower()}'?")
              return 'INVALID'
 
-        # Check B: Fuzzy Matching / Typo Detection
-        # We perform this BEFORE classifying it as a variable.
-        # If a word is 75% similar to a keyword, we assume it's a typo, not a variable.
-        # We ignore very short words (len < 3) to avoid flagging 'x' or 'i' as typos of 'if'.
-        if len(value) > 2:
-            matches = difflib.get_close_matches(value, self.all_vocab, n=1, cutoff=0.75)
+        # Check B: Dynamic Fuzzy Matching
+        # Only check words with 3 or more characters to avoid flagging 'x', 'i', 'y'
+        if len(value) >= 3:
+            # DYNAMIC THRESHOLD LOGIC:
+            # Kapag maiksi (<= 4 chars) gaya ng 'vrr' (3) -> 'var' (3), babaan ang threshold (0.6).
+            # Kapag mahaba (> 4 chars), taasan ang threshold (0.8) para iwas false positive.
+            threshold = 0.6 if len(value) <= 4 else 0.8
+            
+            matches = difflib.get_close_matches(value, self.all_vocab, n=1, cutoff=threshold)
+            
             if matches:
                 suggestion = matches[0]
+                
+                # Special Safety Check:
+                # Kung ang suggestion ay same length at sobrang baba ng similarity (borderline), 
+                # baka valid variable lang ito (e.g. 'bar' vs 'var').
+                # Pero dahil gusto mong mahuli ang 'vrr', ia-accept natin ang match na ito.
+                
                 self._error(f"Unknown identifier '{value}'. Did you mean keyword '{suggestion}'?")
                 return 'INVALID'
 
         # ---------------------------------------------------------------------
         # CONTEXT ENFORCEMENT (Assign Specific ID Tokens)
         # ---------------------------------------------------------------------
-
-        # If it passed the typo check, it is treated as an Identifier.
 
         # CASE 1: Function Identifier (after 'func')
         if last_keyword == 'func':
@@ -316,10 +323,8 @@ class LuminaLexer:
             return 'ID_VAR'
 
         # ---------------------------------------------------------------------
-        # FALLBACK (General Usage)
+        # FALLBACK
         # ---------------------------------------------------------------------
-        # If we see a standalone identifier, we enforce naming conventions.
-
         if value[0].isupper():
             if '_' in value:
                 self._error(f"Invalid Type identifier '{value}'. Underscores allowed only in snake_case variables.")
