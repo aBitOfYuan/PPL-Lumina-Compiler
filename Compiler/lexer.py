@@ -262,7 +262,7 @@ class LuminaLexer:
             return 'NOISE_WORD'
 
         # ---------------------------------------------------------------------
-        # STRICT SPELLING & TYPO ENFORCEMENT (UPDATED)
+        # STRICT SPELLING & TYPO ENFORCEMENT
         # ---------------------------------------------------------------------
         
         # Check A: Case Sensitivity
@@ -274,8 +274,6 @@ class LuminaLexer:
         # Only check words with 3 or more characters to avoid flagging 'x', 'i', 'y'
         if len(value) >= 3:
             # DYNAMIC THRESHOLD LOGIC:
-            # Kapag maiksi (<= 4 chars) gaya ng 'vrr' (3) -> 'var' (3), babaan ang threshold (0.6).
-            # Kapag mahaba (> 4 chars), taasan ang threshold (0.8) para iwas false positive.
             threshold = 0.6 if len(value) <= 4 else 0.8
             
             matches = difflib.get_close_matches(value, self.all_vocab, n=1, cutoff=threshold)
@@ -284,10 +282,6 @@ class LuminaLexer:
                 suggestion = matches[0]
                 
                 # Special Safety Check:
-                # Kung ang suggestion ay same length at sobrang baba ng similarity (borderline), 
-                # baka valid variable lang ito (e.g. 'bar' vs 'var').
-                # Pero dahil gusto mong mahuli ang 'vrr', ia-accept natin ang match na ito.
-                
                 self._error(f"Unknown identifier '{value}'. Did you mean keyword '{suggestion}'?")
                 return 'INVALID'
 
