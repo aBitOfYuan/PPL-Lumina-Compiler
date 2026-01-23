@@ -11,6 +11,7 @@ class Token:
         self.line = line
 
     def __repr__(self):
+        # Adjusted width for longer token names like INTEGER_LITERAL
         return f"Line {self.line:<3} | {self.type:<20} | {self.value}"
 
 
@@ -45,8 +46,8 @@ class LuminaLexer:
             'display', 'read'
         }
 
-        # Reserved literals
-        self.reserved_words = {'true', 'false', 'null'}
+        # Reserved literals (handling null separately, true/false are now BOOL_LITERAL)
+        self.reserved_words = {'null'} 
 
         # Noise words (Context-sensitive)
         self.noise_words = {'that', 'the', 'is'}
@@ -86,24 +87,26 @@ class LuminaLexer:
 
             # --- 2. Invalid Literals & Identifiers ---
             ('ERR_FLOAT',        r'\d+\.\d+(\.\d+)+'),
-            ('ERR_SINGLE_QUOTE', r"'[^']*'"),
             ('ERR_ID_DIGIT',     r'\d+[a-zA-Z_]+'),
-            
-            # [FIXED] changed \w* to \w+ to ensure it only catches 'var-name' 
-            # and ignores 'var--' (decrement) or 'var -' (subtraction)
             ('ERR_ID_HYPHEN',    r'[a-zA-Z_]\w*-\w+'), 
 
-            # --- 3. Invalid Operators ---
+            # --- 3. Valid Literals (Updated Names) ---
+            # CHAR_LITERAL: Matches single char inside single quotes (e.g. 'A', '\n')
+            ('CHAR_LITERAL',     r"'(\\.|[^'\\])'"),
+            
+            # ERR_SINGLE_QUOTE: Now catches multi-char strings in single quotes (e.g. 'abc')
+            ('ERR_SINGLE_QUOTE', r"'[^']*'"), 
+
+            ('STRING_LITERAL',   r'"(\\.|[^"\\])*"'),
+            ('UNTERM_STRING',    r'"[^"\n]*'),
+            ('FLOAT_LITERAL',    r'\d+\.\d+'),
+            ('INTEGER_LITERAL',  r'\d+'),
+
+            # --- 4. Invalid Operators ---
             ('ERR_OP_TRIPLE_EQ', r'==='),
             ('ERR_OP_REL_REV',   r'=<'),
             ('ERR_OP_DBL_NOT',   r'!!'),
-            ('ERR_OP_DBL_DASH',  r'--(?=\d)'), # Catches --5 but allows valid --
-
-            # --- 4. Valid Literals ---
-            ('STRING',           r'"(\\.|[^"\\])*"'),
-            ('UNTERM_STRING',    r'"[^"\n]*'),
-            ('FLOAT',            r'\d+\.\d+'),
-            ('INTEGER',          r'\d+'),
+            ('ERR_OP_DBL_DASH',  r'--(?=\d)'), 
 
             # --- 5. Valid Operators ---
             ('OP_ARROW',         r'->'),
@@ -174,7 +177,8 @@ class LuminaLexer:
                 self._add_token('INVALID', value)
                 continue
             if kind == 'ERR_SINGLE_QUOTE':
-                self._error(f"Invalid string literal '{value}'. Strings must use double quotes.")
+                # Since we added CHAR_LITERAL, this now catches things like 'word' or empty ''
+                self._error(f"Invalid character literal '{value}'. Char literals must contain exactly one character (e.g. 'a').")
                 self._add_token('INVALID', value)
                 continue
             if kind == 'ERR_ID_DIGIT':
@@ -233,13 +237,17 @@ class LuminaLexer:
             self._error(self.invalid_keywords[value])
             return 'INVALID'
         
-        # 2. Valid Keywords (Exact Match)
+        # 2. Boolean Literals (UPDATED)
+        if value in {'true', 'false'}:
+            return 'BOOL_LITERAL'
+
+        # 3. Valid Keywords (Exact Match)
         if value in self.keywords:
             # --- STRICT KEYWORD PROTECTION ---
             strict_predecessors = {'func', 'struct', 'type'}.union(self.primitive_types)
 
             if last_keyword in strict_predecessors:
-                # Exception 1: 'func main' is allowed (entry point)
+                # Exception 1: 'func main' is allowed
                 if last_keyword == 'func' and value == 'main':
                     return 'KEYWORD'
                 
@@ -248,17 +256,16 @@ class LuminaLexer:
                 if last_keyword in self.primitive_types and value in contract_keywords:
                     return 'KEYWORD'
                 
-                # If no exception met, ban the keyword usage here
                 self._error(f"Invalid identifier '{value}'. Keywords cannot be used as variable or function names.")
                 return 'INVALID'
 
             return 'KEYWORD'
 
-        # 3. Reserved Literals
+        # 4. Reserved Literals (null)
         if value in self.reserved_words:
-            return 'RESERVED_WORD'
+            return 'RESERVED_WORD' # Can rename to NULL_LITERAL if needed
 
-        # 4. Noise Words
+        # 5. Noise Words
         if value in self.noise_words:
             return 'NOISE_WORD'
 
@@ -266,13 +273,11 @@ class LuminaLexer:
         # STRICT KEYWORD PROTECTION (Typo/Case Checks)
         # ---------------------------------------------------------------------
         
-        # A. Case Sensitivity Check
         if value.lower() in self.keywords:
              self._error(f"Keywords are case-sensitive. Did you mean '{value.lower()}'?")
              return 'INVALID'
 
-        # B. Typo Detection
-        all_reserved = list(self.keywords) + list(self.reserved_words)
+        all_reserved = list(self.keywords) + list(self.reserved_words) + ['true', 'false']
         matches = difflib.get_close_matches(value, all_reserved, n=1, cutoff=0.8)
         
         if matches:
@@ -304,28 +309,27 @@ class LuminaLexer:
 
         # CASE 3: Variable Identifier (after primitive types only)
         if last_keyword in self.primitive_types:
-            # [UPDATED] Relaxed rule to allow camelCase like 'isDarkmode'
-            # if any(c.isupper() for c in value):
-            #     self._error(f"Invalid variable identifier '{value}'. Must be snake_case (no uppercase).")
-            #     return 'INVALID'
+            # CHECK A: Must not start with Uppercase
+            if value[0].isupper():
+                self._error(f"Invalid variable identifier '{value}'. Variables must start with a lowercase letter.")
+                return 'INVALID'
+            
+            # CHECK B: Strict snake_case (No uppercase allowed at all)
+            if any(c.isupper() for c in value):
+                self._error(f"Invalid variable identifier '{value}'. Must be snake_case (no uppercase).")
+                return 'INVALID'
+            
             return 'ID_VAR'
 
         # ---------------------------------------------------------------------
-        # FALLBACK (When context is neutral OR 'var'/'let')
+        # FALLBACK
         # ---------------------------------------------------------------------
 
-        # If it looks like a Type (PascalCase), classify as ID_VAR_TYPE
         if value[0].isupper():
             if '_' in value:
                 self._error(f"Invalid Type identifier '{value}'. Underscores allowed only in snake_case variables.")
                 return 'INVALID'
             return 'ID_VAR_TYPE'
-
-        # If it looks like a Variable...
-        # [UPDATED] Relaxed rule to allow camelCase
-        # if any(c.isupper() for c in value):
-        #      self._error(f"Invalid variable identifier '{value}'. Must be snake_case.")
-        #      return 'INVALID'
         
         return 'ID_VAR'
 
