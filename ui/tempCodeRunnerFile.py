@@ -371,10 +371,6 @@ class LuminaIDE:
         header_frame = ctk.CTkFrame(self.table_frame, fg_color=self.colors["panel"], height=34, corner_radius=0)
         header_frame.pack(fill=tk.X)
         
-        # --- NEW: Added Label "Lexeme Table" Left of Filter ---
-        lbl_title = ctk.CTkLabel(header_frame, text="Lexeme Table", font=("Segoe UI", 12, "bold"), text_color=self.colors["text"])
-        lbl_title.pack(side=tk.LEFT, padx=(15, 5), pady=4)
-        
         # --- Filter Dropdown ---
         self.filter_var = ctk.StringVar(value="Show: All")
         self.filter_menu = ctk.CTkOptionMenu(
@@ -390,7 +386,7 @@ class LuminaIDE:
             font=("Segoe UI", 11),
             text_color=self.colors["text"]
         )
-        self.filter_menu.pack(side=tk.LEFT, padx=5, pady=4)
+        self.filter_menu.pack(side=tk.LEFT, padx=12, pady=4)
 
         self.btn_save_table = ctk.CTkButton(header_frame, text="💾 Save", 
                                             command=self.save_token_table,
@@ -410,7 +406,8 @@ class LuminaIDE:
         style = ttk.Style()
         style.theme_use("clam")
         
-        # Remove White Border
+        # --- FIX: Remove White Border ---
+        # This layout override prevents the border from being drawn
         style.layout("Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
         
         # General Config
@@ -418,8 +415,8 @@ class LuminaIDE:
                         background="#0b172b",
                         foreground="#f8fafc",
                         fieldbackground="#0b172b",
-                        borderwidth=0,
-                        rowheight=28, # Increased height
+                        borderwidth=0, # Ensure 0
+                        rowheight=24,
                         font=("Segoe UI", 11))
         
         # Header Config
@@ -427,7 +424,7 @@ class LuminaIDE:
                         background="#1e293b",
                         foreground="#f8fafc",
                         relief="flat",
-                        borderwidth=0,
+                        borderwidth=0, # Ensure 0
                         font=("Segoe UI", 12, "bold"))
         
         # Map Rows
@@ -453,15 +450,14 @@ class LuminaIDE:
         self.tree.column("type", width=120, anchor="w") 
         self.tree.column("lexeme", width=150, anchor="w") 
         
-        # --- ORIGINAL SCROLLBAR (Restored) ---
+        # Scrollbar
         scrollbar = ctk.CTkScrollbar(tree_container, orientation="vertical", command=self.tree.yview)
-        
         self.tree.configure(yscrollcommand=scrollbar.set)
         
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        # --- Tags for Coloring and Zebra Striping ---
+        # Tags
         self.tree.tag_configure("ERROR", foreground="#ef4444")
         self.tree.tag_configure("LITERAL", foreground="#22c55e")
         self.tree.tag_configure("KEYWORD", foreground="#a855f7")
@@ -470,10 +466,6 @@ class LuminaIDE:
         self.tree.tag_configure("SYMBOL", foreground="#f472b6")
         self.tree.tag_configure("NOISE", foreground="#94a3b8")
         self.tree.tag_configure("NORMAL", foreground="#f8fafc")
-        
-        # Zebra Striping Tags
-        self.tree.tag_configure("evenrow", background="#0b172b") 
-        self.tree.tag_configure("oddrow", background="#112138")  
         
         self.all_tokens = []     
         self.current_tokens = [] 
@@ -547,7 +539,7 @@ class LuminaIDE:
         if not tokens:
             return
 
-        for i, token in enumerate(tokens):
+        for token in tokens:
             t_type = str(token['type']).upper()
             tag = "NORMAL"
             
@@ -565,10 +557,8 @@ class LuminaIDE:
                 tag = "SYMBOL"
             elif "NOISE" in t_type:
                 tag = "NOISE"
-            
-            row_tag = "evenrow" if i % 2 == 0 else "oddrow"
-            
-            self.tree.insert("", "end", values=(token['line'], token['type'], token['lexeme']), tags=(tag, row_tag))
+                
+            self.tree.insert("", "end", values=(token['line'], token['type'], token['lexeme']), tags=(tag,))
 
     def create_terminal_area(self):
         header = ctk.CTkFrame(self.terminal_frame, fg_color=self.colors["panel"], height=25, corner_radius=0)
